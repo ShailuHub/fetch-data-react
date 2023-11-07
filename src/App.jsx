@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import MoviesList from "./components/MoviesList";
 import "./App.css";
+import AddMovieForm from "./components/AddMovieForm";
 
 function App() {
   const [movies, setMovies] = useState([]);
@@ -13,19 +14,23 @@ function App() {
     setError(null);
     setIsLoading(true);
     try {
-      const response = await fetch("https://swapi.dev/api/films/");
+      const response = await fetch(
+        "https://react-fetch-api-85643-default-rtdb.firebaseio.com/movies.json"
+      );
       if (!response.ok) {
         throw new Error("Something went wrong ....Retrying");
       }
       const data = await response.json();
-      const moviesData = data.results.map((movie) => {
-        return {
-          title: movie.title,
-          releaseDate: movie.release_date,
-          openingText: movie.opening_crawl,
-        };
-      });
-      setMovies(moviesData);
+      const loadedMovies = [];
+      for (const key in data) {
+        loadedMovies.push({
+          id: key,
+          title: data[key].title,
+          openingText: data[key].openingText,
+          releaseDate: data[key].releaseDate,
+        });
+      }
+      setMovies(loadedMovies);
     } catch (error) {
       if (retrying) {
         const timeout = setTimeout(() => {
@@ -38,10 +43,9 @@ function App() {
     setIsLoading(false);
   }, []);
 
-  useEffect(() => {
-    console.log("Clicked");
-    fetchMovies();
-  }, [fetchMovies]);
+  // useEffect(() => {
+  //   fetchMovies();
+  // }, [fetchMovies]);
 
   const handleOnCancel = () => {
     setRetrying(false);
@@ -70,8 +74,33 @@ function App() {
     content = <p>Loading...</p>;
   }
 
+  const addMovieHandler = async (movie) => {
+    try {
+      const response = await fetch(
+        "https://react-fetch-api-85643-default-rtdb.firebaseio.com/movies.json",
+        {
+          method: "POST",
+          body: JSON.stringify(movie),
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      if (!response.ok) {
+        throw new Error("Add data is rejected by firebase");
+      }
+      const data = await response.json();
+      console.log("Added successfully");
+    } catch (error) {
+      console.log(error.message);
+    }
+  };
+
   return (
     <React.Fragment>
+      <section>
+        <AddMovieForm onAddMovie={addMovieHandler} />
+      </section>
       <section>
         <button onClick={fetchMovies}>Fetch Movies</button>
       </section>
